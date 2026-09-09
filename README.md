@@ -51,13 +51,13 @@ Records → `lib/finance/derive.ts#deriveDataset()` → monthly `FinanceDataset`
 
 ```bash
 npm install
-cp .env.example .env.local   # optional — see "Data layer" below
+cp .env.example .env.local   # then fill it in (accounts, secret)
 npm run dev
 ```
 
 Open <http://localhost:3000>. You land on `/login`.
 
-**Default accounts (seed mode), password `rixza`:**
+**Default accounts (no `APP_AUTH_USERS` set), password `rixza`:**
 
 | Compte | Rôle | Peut saisir les données |
 | --- | --- | --- |
@@ -66,14 +66,14 @@ Open <http://localhost:3000>. You land on `/login`.
 | `viewer@rixza.local` | VIEWER | non (lecture seule) |
 
 Override with `APP_AUTH_USERS="email:pass:ROLE,…"` (or single-user
-`APP_AUTH_EMAIL`/`APP_AUTH_PASSWORD`/`APP_AUTH_ROLE`). Set
-`APP_SESSION_SECRET` before deploying.
+`APP_AUTH_EMAIL`/`APP_AUTH_PASSWORD`/`APP_AUTH_ROLE`). Always set
+`APP_SESSION_SECRET` outside local dev.
 
 After signing in you land on `/command-center`. **It starts empty** — no
-fictitious data. An OWNER/ADMIN/FINANCE user opens **Données** in the
-sidebar and enters RIXZA's real figures (months, clients, invoices,
-budget, goals); the dashboard fills in immediately and can be updated
-anytime.
+fictitious data. An OWNER/ADMIN/FINANCE user enters RIXZA's real records
+(clients, subscriptions, invoices, payments, expenses, budget, goals) on
+the dedicated screens; the dashboard fills in immediately and can be
+updated anytime.
 
 ### Scripts
 
@@ -86,49 +86,46 @@ anytime.
 
 ---
 
-## Data layer
+## Data & auth
 
-The app talks only to the `FinanceStore` interface (`lib/data/store.ts`).
+**Auth** — always a local signed session cookie (`HMAC-SHA256`, Web
+Crypto). `proxy.ts` gates every request: no cookie → pages redirect to
+`/login`, `/api/*` gets `401`. Accounts come from `APP_AUTH_USERS`.
+`getCurrentUser()` (`lib/auth/current-user.ts`) reads the user in Server
+Components; sign-out is `POST /api/auth/logout`.
 
-- **No env vars** → `SeedStore` serves `data/dataset.local.json` if it
-  exists (written by the **Données** form, `PUT /api/dataset`), otherwise
-  the bundled `data/seed.ts`.
-- **`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` set** →
-  `SupabaseStore` reads the consolidated dataset from Postgres, and the
-  Données form becomes read-only.
+**Data** — the whole app is one `RixzaData` document behind the
+`FinanceStore` interface (`lib/data/store.ts`):
 
-### The Données form
+| Condition | Store |
+| --- | --- |
+| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` set | `SupabaseStore` — one JSONB row in `app_data`. **Required on Vercel** (read-only filesystem). |
+| otherwise | `SeedStore` — `data/dataset.local.json` (gitignored), else the empty `data/seed.ts`. Dev only. |
 
-`/data` renders `DataEditor` (client) over the current dataset. Save →
-`PUT /api/dataset` → validated by `lib/data/validate.ts` → written to
-`data/dataset.local.json` (gitignored) → `revalidatePath("/", "layout")`
-so the Command Center updates on the next view. "Réinitialiser" →
-`DELETE /api/dataset` restores the bundled seed.
+CRUD screens send the full `RixzaData` to `PUT /api/dataset` →
+`parseRixzaData` validates → `store.setData()` → `revalidatePath`. Writes
+are restricted to OWNER / ADMIN / FINANCE (403 otherwise).
 
-### Auth
+---
 
-`proxy.ts` runs on every request. Seed mode: it verifies a signed
-(`HMAC-SHA256`, Web Crypto) session cookie set by `POST /api/auth/login`;
-missing → pages redirect to `/login`, API calls get `401`. Supabase mode:
-it refreshes and checks the Supabase session instead. `getCurrentUser()`
-(`lib/auth/current-user.ts`) reads the signed-in user in Server
-Components. Sign-out is in the top bar (`POST /api/auth/logout`).
+## Deploy to Vercel
 
-### Standing up Supabase
+1. **Supabase** — create a project, run `supabase/migrations/0001_init.sql`
+   in the SQL editor. Copy from *Project Settings → API*: the project URL
+   and the **`service_role`** key (secret).
+2. **Import** the repo at <https://vercel.com/new> (framework auto-detected).
+3. **Environment Variables** (Project Settings → Environment Variables):
 
-1. Create a Supabase project.
-2. Run `supabase/migrations/0001_init.sql` (SQL editor or `supabase db push`).
-3. Run `supabase/seed.sql` — it only inserts the company row (no fake data).
-4. Create your auth user, then attach a membership:
-   ```sql
-   insert into memberships (company_id, user_id, role)
-   values ('11111111-1111-1111-1111-111111111111', '<your-auth-uid>', 'owner');
-   ```
-5. Fill `.env.local` and restart.
+   | Name | Value |
+   | --- | --- |
+   | `APP_SESSION_SECRET` | a random string — `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
+   | `APP_AUTH_USERS` | `ryan@rixza.local:ryan:OWNER,grace@rixza.local:grace:ADMIN,viewer@rixza.local:rixza:VIEWER` |
+   | `SUPABASE_URL` | your project URL |
+   | `SUPABASE_SERVICE_ROLE_KEY` | the `service_role` key |
 
-Row Level Security scopes every query by `company_id` and role
-(`owner > admin > finance > manager > viewer`, master prompt §34): all
-members read; `finance`+ writes; `admin`+ deletes.
+4. **Deploy.** Every push to `main` redeploys.
+
+CLI alternative: `npx vercel` then `npx vercel --prod` (after `vercel login`).
 
 ---
 
@@ -141,11 +138,11 @@ app/
     data/                 the "Données" input form (OWNER/ADMIN/FINANCE)
     settings/             session, workspace, accounts & roles
   api/
-    auth/login·logout/    seed-mode credential auth
+    auth/login·logout/    local credential auth (signed cookie)
     dataset/              GET (all) · PUT/DELETE (editors only, 403 otherwise)
-  login/                  sign-in (local credentials or Supabase)
+  login/                  sign-in
   page.tsx                → redirect to /command-center
-proxy.ts                  session refresh + auth gate (both modes)
+proxy.ts                  auth gate on every request
 
 components/
   ui/                    design-system primitives (Card, Metric, Delta, …)

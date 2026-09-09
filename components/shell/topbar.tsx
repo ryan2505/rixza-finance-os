@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 import { navItems } from "./nav-items";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +8,13 @@ import { QuickAdd } from "./quick-add";
 
 export function Topbar({
   companyName,
-  supabaseConfigured,
+  dataStore,
   userName,
   roleLabel,
   canEdit,
 }: {
   companyName: string;
-  supabaseConfigured: boolean;
+  dataStore: "Supabase" | "Local";
   userName: string | null;
   roleLabel: string | null;
   canEdit: boolean;
@@ -38,12 +37,7 @@ export function Topbar({
   async function signOut() {
     setSigningOut(true);
     try {
-      if (supabaseConfigured) {
-        const { createClient } = await import("@/lib/supabase/client");
-        await createClient().auth.signOut();
-      } else {
-        await fetch("/api/auth/logout", { method: "POST" });
-      }
+      await fetch("/api/auth/logout", { method: "POST" });
       router.replace("/login");
       router.refresh();
     } finally {
@@ -61,9 +55,7 @@ export function Topbar({
       </div>
       <div className="flex items-center gap-2.5">
         {canEdit ? <QuickAdd /> : null}
-        <Badge tone={supabaseConfigured ? "pos" : "neutral"}>
-          {supabaseConfigured ? "Supabase" : "Données locales"}
-        </Badge>
+        <Badge tone={dataStore === "Supabase" ? "pos" : "neutral"}>{dataStore}</Badge>
         <span className="hidden text-xs text-ink-3 sm:inline">{companyName}</span>
         <div className="flex items-center gap-2">
           <span

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getStore } from "@/lib/data";
-import { deleteLocalData, writeLocalData } from "@/lib/data/local-json";
 import { DatasetValidationError, parseRixzaData } from "@/lib/data/validate";
 import { deriveDataset } from "@/lib/finance/derive";
 import { buildSnapshot } from "@/lib/finance/snapshot";
@@ -37,7 +36,7 @@ export async function PUT(request: Request) {
     // Fails fast if the records can't produce a valid snapshot.
     buildSnapshot(deriveDataset(data));
 
-    await writeLocalData(data);
+    await getStore().setData(data);
     revalidatePath("/", "layout");
 
     return NextResponse.json({ ok: true, data });
@@ -59,7 +58,7 @@ export async function DELETE() {
       { status: 403 },
     );
   }
-  await deleteLocalData();
+  await getStore().resetData();
   revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }

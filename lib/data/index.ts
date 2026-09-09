@@ -1,6 +1,8 @@
 import "server-only";
 
+import { supabaseDataConfigured } from "@/lib/supabase/data-env";
 import { SeedStore } from "./seed-store";
+import { SupabaseStore } from "./supabase-store";
 import type { FinanceStore } from "./store";
 
 let store: FinanceStore | null = null;
@@ -8,16 +10,17 @@ let store: FinanceStore | null = null;
 /**
  * The active data store.
  *
- * The record-level model (RixzaData) currently persists to a local JSON
- * file only; the Supabase mapping predates it and is not wired yet. Auth
- * can still use Supabase independently (see proxy.ts).
+ * - `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` set → `SupabaseStore`
+ *   (one JSONB row; required for any serverless / Vercel deployment).
+ * - otherwise → `SeedStore` (local JSON file, for `npm run dev`).
  *
- * Server-only: touches `next/headers` and the filesystem.
+ * Server-only: touches secrets and, in dev, the filesystem.
  */
 export function getStore(): FinanceStore {
-  if (!store) store = new SeedStore();
+  if (!store) {
+    store = supabaseDataConfigured ? new SupabaseStore() : new SeedStore();
+  }
   return store;
 }
 
-export { SeedStore } from "./seed-store";
 export type { FinanceStore } from "./store";

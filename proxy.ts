@@ -1,10 +1,9 @@
 import type { NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { updateSession } from "@/lib/auth/proxy-session";
 
 /**
- * Next.js 16 proxy (formerly `middleware`). Runs on every matched request
- * to refresh the Supabase auth session and gate routes when Supabase is
- * configured. In seed mode it is a pass-through.
+ * Next.js 16 proxy (formerly `middleware`). Gates every request on the
+ * local signed session cookie.
  */
 export async function proxy(request: NextRequest) {
   return updateSession(request);

@@ -6,16 +6,8 @@ import {
   sessionCookieOptions,
 } from "@/lib/auth/config";
 import { createSessionToken } from "@/lib/auth/session";
-import { supabaseConfigured } from "@/lib/supabase/env";
 
 export async function POST(request: Request) {
-  if (supabaseConfigured) {
-    return NextResponse.json(
-      { error: "Authentification Supabase active — utilisez ce flux." },
-      { status: 400 },
-    );
-  }
-
   const body = (await request.json().catch(() => null)) as
     | { email?: unknown; password?: unknown }
     | null;

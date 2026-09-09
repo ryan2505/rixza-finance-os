@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
-import { supabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { canEditFinancials, ROLE_LABELS } from "@/lib/auth/config";
+import { supabaseDataConfigured } from "@/lib/supabase/data-env";
 import { getStore } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           companyName={dataset.company.name}
-          supabaseConfigured={supabaseConfigured}
+          dataStore={supabaseDataConfigured ? "Supabase" : "Local"}
           userName={user?.name ?? null}
           roleLabel={user ? ROLE_LABELS[user.role].split(" — ")[0] : null}
           canEdit={canEdit}

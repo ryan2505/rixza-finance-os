@@ -2,12 +2,11 @@ import { seedData } from "@/data/seed";
 import { deriveDataset } from "@/lib/finance/derive";
 import type { FinanceDataset, RixzaData } from "@/lib/finance/types";
 import type { FinanceStore } from "./store";
-import { readLocalData } from "./local-json";
+import { deleteLocalData, readLocalData, writeLocalData } from "./local-json";
 
 /**
- * Serves the record-level data provided through the app (persisted to
- * `data/dataset.local.json`), falling back to the empty bundled seed.
- * Active until Supabase is configured.
+ * Stores the record-level document in `data/dataset.local.json`, falling
+ * back to the empty bundled seed. Used in local development.
  */
 export class SeedStore implements FinanceStore {
   async getData(): Promise<RixzaData> {
@@ -17,5 +16,13 @@ export class SeedStore implements FinanceStore {
 
   async getDataset(): Promise<FinanceDataset> {
     return deriveDataset(await this.getData());
+  }
+
+  async setData(data: RixzaData): Promise<void> {
+    await writeLocalData(data);
+  }
+
+  async resetData(): Promise<void> {
+    await deleteLocalData();
   }
 }

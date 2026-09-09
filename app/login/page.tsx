@@ -1,14 +1,11 @@
 import { Suspense } from "react";
-import { supabaseConfigured } from "@/lib/supabase/env";
 import { getLocalUsers, ROLE_LABELS } from "@/lib/auth/config";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Connexion" };
 
 export default function LoginPage() {
-  const mode = supabaseConfigured ? "supabase" : "local";
-  const usingDefaults =
-    mode === "local" && !process.env.APP_AUTH_USERS && !process.env.APP_AUTH_EMAIL;
+  const usingDefaults = !process.env.APP_AUTH_USERS && !process.env.APP_AUTH_EMAIL;
   const accounts = usingDefaults ? getLocalUsers() : [];
 
   return (
@@ -24,15 +21,11 @@ export default function LoginPage() {
         </div>
 
         <h1 className="text-xl font-semibold tracking-tight text-ink">Connexion</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          {mode === "supabase"
-            ? "Utilisez vos identifiants de l'espace RIXZA."
-            : "Accès réservé à la direction de RIXZA."}
-        </p>
+        <p className="mt-1 text-sm text-ink-2">Accès réservé à la direction de RIXZA.</p>
 
         <div className="mt-6">
           <Suspense fallback={<div className="h-44" />}>
-            <LoginForm mode={mode} />
+            <LoginForm />
           </Suspense>
         </div>
 
