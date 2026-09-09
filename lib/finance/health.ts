@@ -8,6 +8,12 @@
 import type { CommandCenterSnapshot } from "./snapshot";
 import type { FinanceDataset } from "./types";
 import { pctChange } from "./metrics";
+import {
+  MARGIN_CORE_HIGH_PCT,
+  MARGIN_CORE_LOW_PCT,
+  MARGIN_FLOOR_PCT,
+  MARGIN_REJECT_PCT,
+} from "./catalogue";
 
 export type HealthStatus = "Solide" | "Correct" | "Fragile" | "Critique";
 
@@ -65,13 +71,15 @@ export function buildHealthScore(
     note: `${mrrGrowth.toFixed(1)} % vs mois précédent`,
   };
 
-  // 3. Rentabilité (marge nette)
+  // 3. Rentabilité — marge BRUTE contre les seuils RIXZA (Pricing Engine §4/§19/§21)
+  const grossMargin = s.profitability.grossMargin ?? 0;
   const netMargin = s.profitability.netMargin ?? 0;
   const c3: HealthComponent = {
-    label: "Rentabilité",
+    label: "Rentabilité (marge brute)",
     weight: 20,
-    score: scale(netMargin, 0, 20),
-    note: `marge nette ${netMargin.toFixed(1)} %`,
+    // < 45 % → 0 ; 50 % (plancher) → 50 ; 65 % (haut du cœur) → 100
+    score: scale(grossMargin, MARGIN_REJECT_PCT, MARGIN_CORE_HIGH_PCT + 3),
+    note: `marge brute ${grossMargin.toFixed(1)} % · plancher ${MARGIN_FLOOR_PCT} %, cœur ${MARGIN_CORE_LOW_PCT}–${MARGIN_CORE_HIGH_PCT} % (marge nette ${netMargin.toFixed(1)} %)`,
   };
 
   // 4. Trésorerie (mois de charges couverts)

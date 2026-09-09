@@ -49,14 +49,20 @@ export const CHANNEL_OPTIONS = opts([
 ]);
 
 export const SERVICE_OPTIONS = opts([
-  ["website", "Site web"],
+  ["strategy", "Stratégie"],
+  ["branding", "Branding"],
+  ["website", "Website"],
+  ["landing", "Landing Page"],
+  ["ecommerce", "E-commerce"],
   ["seo", "SEO"],
-  ["aeo", "AEO"],
-  ["geo", "GEO"],
-  ["automation", "Automatisation"],
+  ["aeo_geo", "AEO / GEO"],
+  ["automation", "Automation"],
+  ["crm", "CRM"],
   ["ai", "IA"],
-  ["consulting", "Conseil"],
+  ["saas", "SaaS"],
   ["maintenance", "Maintenance"],
+  ["system", "System"],
+  ["transformation", "Transformation"],
 ]);
 
 export const CLIENT_STATUS_OPTIONS = opts([

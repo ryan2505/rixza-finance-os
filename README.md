@@ -17,7 +17,8 @@ decisions: `DATA → CONTEXT → INSIGHT → DECISION`.
 | **Derivation engine** — monthly figures + MRR waterfall + cash balance + P&L computed from the records, never typed by hand | ✅ (`lib/finance/derive.ts`) |
 | Command Center dashboard, each block with a "Comment c'est calculé" panel | ✅ (`app/(app)/command-center`) |
 | **RIXZA Financial Health Score** (0–100, 9 weighted components) on the Command Center | ✅ (`lib/finance/health.ts`) |
-| **Chiffre d'affaires** — by month / client / service / country / type | ✅ (`/revenue`) |
+| **Chiffre d'affaires** — by month / client / service / **catalogue offer** / country / type | ✅ (`/revenue`) |
+| **RIXZA catalogue (Pricing Engine V2)** — ~55 offres avec prix FCFA; sélecteur qui pré-remplit les montants; règles de marge RIXZA (plancher 50 %, cœur 55-65 %) dans le Health Score et les alertes | ✅ (`lib/finance/catalogue.ts`) |
 | **Factures** — invoice + payment CRUD, AR metrics, auto-overdue | ✅ (`/invoices`) |
 | **Clients** — portfolio table + per-client financial profile | ✅ (`/clients`, `/clients/[id]`) |
 | **Dépenses** — expense + recurring-cost CRUD, per-category breakdown | ✅ (`/expenses`) |
@@ -26,7 +27,7 @@ decisions: `DATA → CONTEXT → INSIGHT → DECISION`.
 | Accounts with roles (owner / admin / viewer), edit gated to OWNER·ADMIN·FINANCE, server-enforced (403) | ✅ (`lib/auth`) |
 | Signed-cookie login with no backend, sign-out, global "+" quick-add | ✅ |
 | Blank slate — no fictitious data; every screen prompts for real input | ✅ |
-| Supabase schema/RLS present but the record model is not wired to it yet | ⏳ (`supabase/`) |
+| Data persistence: Supabase JSONB row (prod / Vercel) or local JSON file (dev) | ✅ (`lib/data`) |
 | AI Financial Analyst / Insights (§25–§27), Forecast, Scenarios, KPIs, Analytics, Unit Economics, Vendors, Accounts, Transactions, Reports, Audit log, Cmd+K | Not built |
 
 ### How the numbers are derived

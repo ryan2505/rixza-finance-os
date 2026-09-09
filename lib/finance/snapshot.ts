@@ -344,6 +344,30 @@ function buildAlerts(
 
   const cur = dataset.company.baseCurrency;
 
+  // Marge brute vs plancher RIXZA (Pricing Engine §4/§19)
+  const last = dataset.months.at(-1);
+  if (last) {
+    const rev = last.recurringRevenue + last.oneTimeRevenue;
+    if (rev > 0) {
+      const gm = ((rev - last.cogs) / rev) * 100;
+      if (gm < 45) {
+        alerts.push({
+          id: "margin-reject",
+          level: "danger",
+          title: "Marge brute critique",
+          detail: `${gm.toFixed(1)} % ce mois-ci — sous le seuil de refus RIXZA (45 %).`,
+        });
+      } else if (gm < 50) {
+        alerts.push({
+          id: "margin-floor",
+          level: "warning",
+          title: "Marge brute sous le plancher RIXZA",
+          detail: `${gm.toFixed(1)} % ce mois-ci — plancher recommandé 50 %.`,
+        });
+      }
+    }
+  }
+
   if (ctx.runway !== null && ctx.runway < 3) {
     alerts.push({
       id: "runway-critical",

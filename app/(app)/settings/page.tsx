@@ -10,8 +10,18 @@ import {
   getLocalUsers,
   ROLE_LABELS,
 } from "@/lib/auth/config";
+import { CATALOGUE } from "@/lib/finance/catalogue";
+import { SERVICE_OPTIONS } from "@/lib/finance/labels";
+import { formatMoney } from "@/lib/finance/format";
 
 export const metadata = { title: "Réglages" };
+
+const catLabel = (v: string) => SERVICE_OPTIONS.find((o) => o.value === v)?.label ?? v;
+const KIND_LABEL: Record<string, string> = {
+  product: "Produit",
+  system: "System",
+  addon: "Add-on",
+};
 
 export default async function SettingsPage() {
   const [dataset, user] = await Promise.all([
@@ -105,6 +115,48 @@ export default async function SettingsPage() {
             modifier les données financières (écran Données). Les autres rôles ont un
             accès en lecture seule au tableau de bord.
           </p>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Catalogue RIXZA — Pricing V2"
+          hint="Prix recommandés (FCFA). Sert à pré-remplir les montants à la saisie."
+        />
+        <CardBody className="max-h-[28rem] overflow-auto p-0">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-surface">
+              <tr className="border-b border-border text-left text-xs text-ink-3">
+                <th className="px-5 py-2 font-medium">Offre</th>
+                <th className="px-3 py-2 font-medium">Catégorie</th>
+                <th className="px-3 py-2 font-medium">Type</th>
+                <th className="px-5 py-2 text-right font-medium">Prix V2</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CATALOGUE.map((it) => (
+                <tr key={it.id} className="border-b border-border last:border-0">
+                  <td className="px-5 py-2 font-medium text-ink">
+                    {it.name}
+                    {it.note ? (
+                      <span className="ml-2 text-xs font-normal text-ink-3">{it.note}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2 text-ink-2">{catLabel(it.category)}</td>
+                  <td className="px-3 py-2 text-ink-3">{KIND_LABEL[it.kind]}</td>
+                  <td className="num px-5 py-2 text-right">
+                    {it.price === 0
+                      ? "Gratuit"
+                      : formatMoney(it.price, "XAF", { compact: it.price >= 1_000_000 })}
+                    {it.priceMax
+                      ? `–${formatMoney(it.priceMax, "XAF", { compact: true })}`
+                      : ""}
+                    {it.recurring ? "/mois" : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </CardBody>
       </Card>
     </div>

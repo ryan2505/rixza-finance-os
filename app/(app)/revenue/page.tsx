@@ -7,10 +7,25 @@ import { getStore } from "@/lib/data";
 import { buildSnapshot } from "@/lib/finance/snapshot";
 import { formatMoney, formatMonthLabel } from "@/lib/finance/format";
 import { SERVICE_OPTIONS } from "@/lib/finance/labels";
+import { catalogueName } from "@/lib/finance/catalogue";
 
 export const metadata = { title: "Chiffre d'affaires" };
 
 const serviceLabel = (v: string) => SERVICE_OPTIONS.find((o) => o.value === v)?.label ?? v;
+
+/** Number of window months a subscription is active. */
+function activeMonths(
+  sub: { startDate: string; endDate: string | null; status: string },
+  months: string[],
+): number {
+  if (sub.status !== "active") return 0;
+  return months.filter((m) => {
+    const first = `${m}-01`;
+    const [y, mm] = m.split("-").map(Number);
+    const last = `${m}-${String(new Date(Date.UTC(y, mm, 0)).getUTCDate()).padStart(2, "0")}`;
+    return sub.startDate <= last && (!sub.endDate || sub.endDate >= first);
+  }).length;
+}
 
 export default async function RevenuePage() {
   const [data, dataset] = await Promise.all([
@@ -37,13 +52,34 @@ export default async function RevenuePage() {
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
-  // by service (one-time bookings) + recurring bucket
+  const monthKeys = months.map((m) => m.month);
+
+  // by service — one-time bookings + recognised subscription MRR over the window
   const byService = new Map<string, number>();
   for (const r of data.revenueRecords) {
     const key = r.service ?? "autre";
     byService.set(key, (byService.get(key) ?? 0) + r.amount);
   }
-  const serviceRows = [...byService.entries()].sort((a, b) => b[1] - a[1]);
+  for (const sub of data.subscriptions) {
+    const key = sub.service ?? "autre";
+    byService.set(key, (byService.get(key) ?? 0) + sub.amountPerMonth * activeMonths(sub, monthKeys));
+  }
+  const serviceRows = [...byService.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+
+  // by catalogue offer
+  const byProduct = new Map<string, number>();
+  for (const r of data.revenueRecords) {
+    if (!r.productId) continue;
+    byProduct.set(r.productId, (byProduct.get(r.productId) ?? 0) + r.amount);
+  }
+  for (const sub of data.subscriptions) {
+    if (!sub.productId) continue;
+    byProduct.set(
+      sub.productId,
+      (byProduct.get(sub.productId) ?? 0) + sub.amountPerMonth * activeMonths(sub, monthKeys),
+    );
+  }
+  const productRows = [...byProduct.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
 
   // by country
   const byCountry = new Map<string, number>();
@@ -125,17 +161,39 @@ export default async function RevenuePage() {
         </Card>
 
         <Card>
-          <CardHeader title="Par service (ponctuel)" />
+          <CardHeader title="Par service" hint="Ponctuel + MRR reconnu sur la fenêtre" />
           <CardBody className="p-0">
             {serviceRows.length === 0 ? (
-              <p className="p-5 text-sm text-ink-3">Aucun revenu ponctuel.</p>
+              <p className="p-5 text-sm text-ink-3">Aucun revenu.</p>
             ) : (
               serviceRows.map(([k, v], i) => (
                 <Row2
                   key={k}
-                  label={k === "autre" ? "Autre" : serviceLabel(k)}
+                  label={k === "autre" ? "Non classé" : serviceLabel(k)}
                   value={formatMoney(v, cur)}
+                  pct={windowTotal ? (v / windowTotal) * 100 : 0}
                   last={i === serviceRows.length - 1}
+                />
+              ))
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="Par offre (catalogue RIXZA)" hint={`${productRows.length}`} />
+          <CardBody className="p-0">
+            {productRows.length === 0 ? (
+              <p className="p-5 text-sm text-ink-3">
+                Aucun revenu rattaché à une offre du catalogue.
+              </p>
+            ) : (
+              productRows.map(([k, v], i) => (
+                <Row2
+                  key={k}
+                  label={catalogueName(k)}
+                  value={formatMoney(v, cur)}
+                  pct={windowTotal ? (v / windowTotal) * 100 : 0}
+                  last={i === productRows.length - 1}
                 />
               ))
             )}

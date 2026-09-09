@@ -35,7 +35,8 @@ const GROUPS: ExpenseGroup[] = ["operations", "marketing", "human_resources", "s
 const METRICS: GoalMetric[] = ["revenue", "mrr", "arr", "profit", "cash", "clients"];
 const CHANNELS: SalesChannel[] = ["outbound", "inbound", "referral", "partnership", "organic", "paid"];
 const SERVICES: ServiceLine[] = [
-  "website", "seo", "aeo", "geo", "automation", "ai", "consulting", "maintenance",
+  "strategy", "branding", "website", "landing", "ecommerce", "seo", "aeo_geo",
+  "automation", "crm", "ai", "saas", "maintenance", "system", "transformation",
 ];
 const CATEGORIES: ExpenseCategory[] = [
   "operations", "software", "infrastructure", "marketing", "sales", "human_resources",
@@ -122,6 +123,8 @@ export function parseRixzaData(input: unknown): RixzaData {
       id: id(o.id, "sub", i),
       clientId: str(o.clientId, `Abonnement #${i + 1} — client`),
       label: optStr(o.label) || "Abonnement",
+      productId: optStr(o.productId) || null,
+      service: SERVICES.includes(o.service as ServiceLine) ? (o.service as ServiceLine) : null,
       amountPerMonth: num(o.amountPerMonth, `Abonnement #${i + 1} — montant mensuel`),
       startDate: date(o.startDate, `Abonnement #${i + 1} — début`),
       endDate: nullableDate(o.endDate),
@@ -135,6 +138,7 @@ export function parseRixzaData(input: unknown): RixzaData {
       id: id(o.id, "rev", i),
       clientId: str(o.clientId, `Revenu #${i + 1} — client`),
       service: SERVICES.includes(o.service as ServiceLine) ? (o.service as ServiceLine) : null,
+      productId: optStr(o.productId) || null,
       bookedOn: date(o.bookedOn, `Revenu #${i + 1} — date`),
       amount: num(o.amount, `Revenu #${i + 1} — montant`),
       description: optStr(o.description),
@@ -147,6 +151,7 @@ export function parseRixzaData(input: unknown): RixzaData {
       id: id(o.id, "inv", i),
       number: str(o.number, `Facture #${i + 1} — numéro`),
       clientId: str(o.clientId, `Facture #${i + 1} — client`),
+      productId: optStr(o.productId) || null,
       issueDate: date(o.issueDate, `Facture #${i + 1} — émission`),
       dueDate: date(o.dueDate, `Facture #${i + 1} — échéance`),
       status: oneOf(o.status, STATUSES, `Facture #${i + 1} — statut`, "draft"),

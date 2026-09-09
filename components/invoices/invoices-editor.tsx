@@ -17,6 +17,9 @@ import {
   METHOD_OPTIONS,
 } from "@/components/data/fields";
 import type { InvoiceRecord, PaymentRecord, RixzaData } from "@/lib/finance/types";
+import { catalogueItem, catalogueOptions } from "@/lib/finance/catalogue";
+
+const PRODUCT_OPTS = [{ value: "", label: "— libre —" }, ...catalogueOptions()];
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -55,6 +58,7 @@ export function InvoicesEditor({
             id: uid("inv"),
             number: nextNumber(),
             clientId: data.clients[0]?.id ?? "",
+            productId: null,
             issueDate: issue,
             dueDate: plusDays(issue, 15),
             status: "draft",
@@ -105,6 +109,25 @@ export function InvoicesEditor({
                       value={inv.clientId}
                       options={clientOptions.length ? clientOptions : [{ value: "", label: "— aucun —" }]}
                       onChange={(v) => setInv(replaceAt(invoices, i, { ...inv, clientId: v }))}
+                    />
+                    <Sel
+                      label="Offre du catalogue"
+                      value={inv.productId ?? ""}
+                      options={PRODUCT_OPTS}
+                      onChange={(v) => {
+                        const item = catalogueItem(v);
+                        setInv(
+                          replaceAt(invoices, i, {
+                            ...inv,
+                            productId: v || null,
+                            amount:
+                              item && inv.currency === data.company.baseCurrency
+                                ? item.price
+                                : inv.amount,
+                            note: inv.note || item?.name || "",
+                          }),
+                        );
+                      }}
                     />
                     <Num
                       label="Montant"

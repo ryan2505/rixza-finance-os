@@ -25,9 +25,19 @@ import type {
   RixzaData,
   Subscription,
 } from "@/lib/finance/types";
+import { catalogueItem, catalogueOptions } from "@/lib/finance/catalogue";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const thisMonth = () => new Date().toISOString().slice(0, 7);
+
+const RECURRING_PRODUCT_OPTS = [
+  { value: "", label: "— libre —" },
+  ...catalogueOptions((i) => i.recurring),
+];
+const ONE_OFF_PRODUCT_OPTS = [
+  { value: "", label: "— libre —" },
+  ...catalogueOptions((i) => !i.recurring),
+];
 
 export function DataEditor({
   initial,
@@ -99,6 +109,8 @@ export function DataEditor({
                             id: uid("sub"),
                             clientId: data.clients[0]?.id ?? "",
                             label: "Abonnement",
+                            productId: null,
+                            service: null,
                             amountPerMonth: 0,
                             startDate: today(),
                             endDate: null,
@@ -126,18 +138,35 @@ export function DataEditor({
                         update({ subscriptions: replaceAt(subs, i, { ...s, clientId: v }) })
                       }
                     />
-                    <Txt
-                      label="Libellé"
-                      value={s.label}
-                      onChange={(v) =>
-                        update({ subscriptions: replaceAt(subs, i, { ...s, label: v }) })
-                      }
+                    <Sel
+                      label="Offre du catalogue"
+                      value={s.productId ?? ""}
+                      options={RECURRING_PRODUCT_OPTS}
+                      onChange={(v) => {
+                        const item = catalogueItem(v);
+                        update({
+                          subscriptions: replaceAt(subs, i, {
+                            ...s,
+                            productId: v || null,
+                            service: item?.category ?? s.service,
+                            label: item?.name ?? s.label,
+                            amountPerMonth: item ? item.price : s.amountPerMonth,
+                          }),
+                        });
+                      }}
                     />
                     <Num
                       label="Montant / mois"
                       value={s.amountPerMonth}
                       onChange={(v) =>
                         update({ subscriptions: replaceAt(subs, i, { ...s, amountPerMonth: v }) })
+                      }
+                    />
+                    <Txt
+                      label="Libellé"
+                      value={s.label}
+                      onChange={(v) =>
+                        update({ subscriptions: replaceAt(subs, i, { ...s, label: v }) })
                       }
                     />
                     <Sel
@@ -196,6 +225,7 @@ export function DataEditor({
                             id: uid("rev"),
                             clientId: data.clients[0]?.id ?? "",
                             service: null,
+                            productId: null,
                             bookedOn: today(),
                             amount: 0,
                             description: "",
@@ -221,6 +251,23 @@ export function DataEditor({
                       onChange={(v) =>
                         update({ revenueRecords: replaceAt(revs, i, { ...r, clientId: v }) })
                       }
+                    />
+                    <Sel
+                      label="Offre du catalogue"
+                      value={r.productId ?? ""}
+                      options={ONE_OFF_PRODUCT_OPTS}
+                      onChange={(v) => {
+                        const item = catalogueItem(v);
+                        update({
+                          revenueRecords: replaceAt(revs, i, {
+                            ...r,
+                            productId: v || null,
+                            service: item?.category ?? r.service,
+                            amount: item ? item.price : r.amount,
+                            description: r.description || item?.name || "",
+                          }),
+                        });
+                      }}
                     />
                     <Sel
                       label="Service"

@@ -27,15 +27,22 @@ export type SalesChannel =
   | "organic"
   | "paid";
 
+/** Catégories de l'architecture commerciale RIXZA (Pricing Engine §2 / §9). */
 export type ServiceLine =
+  | "strategy"
+  | "branding"
   | "website"
+  | "landing"
+  | "ecommerce"
   | "seo"
-  | "aeo"
-  | "geo"
+  | "aeo_geo"
   | "automation"
+  | "crm"
   | "ai"
-  | "consulting"
-  | "maintenance";
+  | "saas"
+  | "maintenance"
+  | "system"
+  | "transformation";
 
 export type InvoiceStatus =
   | "draft"
@@ -199,6 +206,9 @@ export interface Subscription {
   id: string;
   clientId: string;
   label: string;
+  /** Optional link to a recurring RIXZA catalogue offer. */
+  productId: string | null;
+  service: ServiceLine | null;
   amountPerMonth: Money;
   startDate: ISODate;
   endDate: ISODate | null;
@@ -210,6 +220,8 @@ export interface RevenueRecord {
   id: string;
   clientId: string;
   service: ServiceLine | null;
+  /** Optional link to a RIXZA catalogue offer (lib/finance/catalogue.ts). */
+  productId: string | null;
   bookedOn: ISODate;
   amount: Money;
   description: string;
@@ -219,6 +231,7 @@ export interface InvoiceRecord {
   id: string;
   number: string;
   clientId: string;
+  productId: string | null;
   issueDate: ISODate;
   dueDate: ISODate;
   status: InvoiceStatus;

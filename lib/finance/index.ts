@@ -5,3 +5,4 @@ export * from "./snapshot";
 export * from "./briefing";
 export * from "./derive";
 export * from "./health";
+export * from "./catalogue";
